@@ -1,0 +1,32 @@
+2025-05-05 11:18
+* Jeff Heaton Code works
+* Figure out how it works with the FFT
+* Store the notes from each frame in a database to use for analysis
+
+2025-05-06 11:37
+* brew install ffmpeg
+* ffmpeg -i input.mp3 output.wav
+* brew install poppler
+* pdftoppm -jpeg skyFullOfStars.pdf output-image
+
+2025-05-07 15:37
+* Code stores the top 8 that are above 1 standard deviation below the mean of each frame
+* Will add blank notes for any below one standard standard deviation
+
+2025-05-07 23:20
+* Uses fluidsynth to generte piano noises
+* Fixed matrix to be based on an initial steady state instead of one starting chord
+* Graph seems complete for now? But may need to implement a similar method to page rank if I ever find a sink
+* Tracks trajectory based on random initial state
+* Need to look into more markov things and other ways to tweak this system
+* Potentially training onto an artist as opposed to a songs
+
+
+
+OVERALL THINGS TO DO
+------------------------------
+------------------------------
+* Figure out how Fast Fourier Transform works
+* Figure out good explanations for the sound library I used
+* Break down the princeton row stochastic matrix
+------------------------------------------------------------------------------------------
