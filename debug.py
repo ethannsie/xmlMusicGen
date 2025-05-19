@@ -24,12 +24,12 @@ def parse_musicxml_all_note_info(xml_path):
                     divisions = int(divisions_tag.text)
 
             for elem in measure.findall(f"{ns}note"):
-                # Get default-x attribute if present (optional, can be added)
+                print(f"Processing note: {elem.attrib}")  # Debugging: Show note attributes
+
+                # Initialize the note info dictionary
                 note_info = {
                     'measure': measure_number,
                     'part_id': part_id,
-                    'staff': None,
-                    'voice': None,
                     'is_rest': False,
                     'pitch': None,
                     'octave': None,
@@ -40,7 +40,6 @@ def parse_musicxml_all_note_info(xml_path):
                     'tie': [],
                     'notations': [],
                     'accidental': None,
-                    'chord': False,
                     'start_time': current_time,
                 }
 
@@ -52,6 +51,7 @@ def parse_musicxml_all_note_info(xml_path):
                 staff = elem.find(f"{ns}staff")
                 if staff is not None:
                     note_info['staff'] = int(staff.text)
+
                 # Rest or Pitch
                 if elem.find(f"{ns}rest") is not None:
                     note_info['is_rest'] = True
@@ -64,19 +64,30 @@ def parse_musicxml_all_note_info(xml_path):
                         note_info['pitch'] = step.text if step is not None else None
                         note_info['octave'] = int(octave.text) if octave is not None else None
                         note_info['alter'] = int(alter.text) if alter is not None else None
+
                 # Duration
                 duration = elem.find(f"{ns}duration")
-                note_info['duration'] = int(duration.text) if duration is not None else None
+                if duration is not None:
+                    note_info['duration'] = int(duration.text)
+                else:
+                    print(f"Warning: Missing duration for note in measure {measure_number}")  # Debugging: Duration check
+
                 # Type (eighth, quarter, etc.)
                 typ = elem.find(f"{ns}type")
-                note_info['type'] = typ.text if typ is not None else None
+                if typ is not None:
+                    note_info['type'] = typ.text
+                else:
+                    print(f"Warning: Missing type for note in measure {measure_number}")  # Debugging: Type check
+
                 # Dotted note
                 dot = elem.find(f"{ns}dot")
                 note_info['dot'] = dot is not None
+
                 # Tie
                 for tie in elem.findall(f"{ns}tie"):
                     if 'type' in tie.attrib:
                         note_info['tie'].append(tie.attrib['type'])
+
                 # Notations (slurs, ties, articulations, etc.)
                 notations = elem.find(f"{ns}notations")
                 if notations is not None:
@@ -91,113 +102,67 @@ def parse_musicxml_all_note_info(xml_path):
                         elif n.tag.endswith('dynamics'):
                             for dyn in n:
                                 note_info['notations'].append(dyn.tag.split('}')[-1])
+
                 # Accidental
                 accidental = elem.find(f"{ns}accidental")
                 if accidental is not None:
                     note_info['accidental'] = accidental.text
+
                 # Chord
                 if elem.find(f"{ns}chord") is not None:
                     note_info['chord'] = True
                     note_info['start_time'] = current_time
 
+                # Append the note to the data
                 notes_data.append(note_info)
+
                 # Only advance time if not a chord note
                 if elem.find(f"{ns}chord") is None and duration is not None:
                     current_time += int(duration.text)
+                elif duration is None:
+                    print(f"Warning: Missing duration for chord note in measure {measure_number}")  # Debugging: Missing duration for chord
 
-    # Group notes by measure
-    measureData = []
-    data = []
-    last_measure = None
-    for note in notes_data:
-        measure = int(note['measure'])
-        if last_measure is None or measure != last_measure:
-            if data:
-                measureData.append(data)
-            data = [f"measure {measure}"]
-            last_measure = measure
-        data.append(note)
-    if data:
-        measureData.append(data)
+            # After processing the notes in the measure, print the current time
+            print(f"End of measure {measure_number}, current_time: {current_time}")  # Debugging: Check time progress
 
-    return measureData
-
-# ---- Uniform stretching to 64 slots per measure ----
-def notes_to_uniform_grid(measureData):
-    notesOnMeasures = []
-    for measureCount, measure in enumerate(measureData):
-        notesOnMeasures.append([[] for _ in range(64)])
-        staff1MaxTime = 0
-        staff2MinTime = None
-        staff1MinTime = None
-        staff2MaxTime = 0
-
-        # Find max for each staff
-        for note in measure[1:]:
-            if note['staff'] == 1:
-                if staff1MinTime is None:
-                    staff1MinTime = note['start_time']
-                else:
-                    staff1MinTime = min(staff1MinTime, note['start_time'])
-                staff1MaxTime = max(staff1MaxTime, note['start_time'] + (note['duration'] if note['duration'] else 0))
-            if note['staff'] == 2:
-                if staff2MinTime is None:
-                    staff2MinTime = note['start_time']
-                else:
-                    staff2MinTime = min(staff2MinTime, note['start_time'])
-                staff2MaxTime = max(staff2MaxTime, note['start_time'] + (note['duration'] if note['duration'] else 0))
-
-        if staff2MinTime is None:
-            staff2MinTime = 0
-        if staff1MinTime is None:
-            staff1MinTime = 0
-
-        staff2Range = staff2MaxTime - staff2MinTime if staff2MaxTime > staff2MinTime else 1
-        staff1Range = staff1MaxTime - staff1MinTime if staff1MaxTime > staff1MinTime else 1
-
-        for note in measure[1:]:
-            if not note['is_rest']:
-                startTime = int(note['start_time'])
-                duration = int(note['duration']) if note['duration'] else 0
-                note_str = str(note['pitch']) + str(note['octave']) if note['pitch'] and note['octave'] is not None else ""
-                if note.get('accidental') == "flat":
-                    note_str += "b"
-                elif note.get('accidental') == "sharp":
-                    note_str += "#"
-                elif note.get('accidental') == "natural":
-                    note_str += "*"
-
-                if note['staff'] == 1:
-                    grid_start = int(round((startTime - staff1MinTime) * 64 / staff1Range))
-                    grid_duration = int(round(duration * 64 / staff1Range))
-                elif note['staff'] == 2:
-                    grid_start = int(round((startTime - staff2MinTime) * 64 / staff2Range))
-                    grid_duration = int(round(duration * 64 / staff2Range))
-                else:
-                    grid_start = 0
-                    grid_duration = 0
-                if grid_duration < 1:
-                    grid_duration = 1
-
-                for i in range(grid_duration):
-                    idx = grid_start + i
-                    if 0 <= idx < 64:
-                        notesOnMeasures[measureCount][idx].append(note_str)
-    return notesOnMeasures
+    return notes_data
 
 if __name__ == "__main__":
     import sys, json
     if len(sys.argv) < 2:
-        print("Usage: python parse_musicxml_uniform_grid.py <musicxml_file>")
+        print("Usage: python parse_musicxml_all_note_info.py <musicxml_file>")
         sys.exit(1)
     xml_path = sys.argv[1]
-    measureData = parse_musicxml_all_note_info(xml_path)
-    notesOnMeasures = notes_to_uniform_grid(measureData)
+    notes = parse_musicxml_all_note_info(xml_path)
 
-    # Print example output for first measure
-    print("First measure, grid of notes:")
-    for idx, notes in enumerate(notesOnMeasures):
-        print(f"{idx}: {notes}")
+    # Debugging: Check the first few notes
+    print("First few notes:")
+    print(notes[:5])
 
-    # If you want all note data as JSON:
-    # print(json.dumps(measureData, indent=2))
+    measureData = []
+    data = ["measure 1"]
+    measureCounter = 1
+    for note in notes:
+        if int(note['measure']) == measureCounter:
+            data.append(note)
+        else:
+            measureData.append(data)
+            measureCounter += 1
+            data = [f"measure {measureCounter}"]
+
+    # Handle the last measure if needed
+    if data:
+        measureData.append(data)
+
+    # Debugging: Print the measure data
+    print("Measure Data:")
+    for measure in measureData:
+        print("------------------------")
+        for note in measure:
+            print(note)
+            print()
+
+
+    for note in notes:
+        print(note)
+        print()
