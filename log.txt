@@ -30,3 +30,20 @@ OVERALL THINGS TO DO
 * Figure out good explanations for the sound library I used
 * Break down the princeton row stochastic matrix
 ------------------------------------------------------------------------------------------
+
+
+
+2025-05-19
+* All of that is useless.
+* FIX THE TOP STAFF
+
+* Current project specs
+  * Code takes XML data from Musescore. I can also decompress MusicXML Code
+  * This XML data is read through an element tree and returns data from every measure
+  * Using that data, I can create a list of nested lists that represent a musical score
+  * A score consists of a list where each measure in the score is a list of 64 lists in the big list
+  * The XML data is then spread throughout each 64th of a note based on duration and start time read from the XML
+  * This allows for transition states between each 64th of a note which should account for both length
+
+* Things to try:
+  * Isolating bottom staff and top staff
