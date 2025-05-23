@@ -10,7 +10,7 @@ def decompress_mxl(file_path, output_folder):
         zip_ref.extractall(output_folder)
         print(f"Extracted {file_path} to {output_folder}")
 
-mxl_file = "perfect.mxl"
+mxl_file = "input_mxl/sailor.mxl"
 output_folder = "extracted_mxl"
 os.makedirs(output_folder, exist_ok=True)
 decompress_mxl(mxl_file, output_folder)

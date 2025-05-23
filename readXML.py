@@ -3,8 +3,6 @@ import xml.etree.ElementTree as ET
 def parse_musicxml_all_note_info(xml_path):
     tree = ET.parse(xml_path)
     root = tree.getroot()
-
-    # Get namespace if present
     ns = ''
     if root.tag.startswith('{'):
         ns = root.tag.split('}')[0] + '}'
@@ -16,6 +14,7 @@ def parse_musicxml_all_note_info(xml_path):
         for measure in part.findall(f"{ns}measure"):
             measure_number = measure.attrib.get('number')
             current_time = 0
+            last_nonchord_time = 0
             divisions = 1
             attributes = measure.find(f"{ns}attributes")
             if attributes is not None:
@@ -24,7 +23,9 @@ def parse_musicxml_all_note_info(xml_path):
                     divisions = int(divisions_tag.text)
 
             for elem in measure.findall(f"{ns}note"):
-                # Get default-x attribute if present (optional, can be added)
+                is_chord = elem.find(f"{ns}chord") is not None
+                note_start_time = last_nonchord_time if is_chord else current_time
+
                 note_info = {
                     'measure': measure_number,
                     'part_id': part_id,
@@ -40,8 +41,8 @@ def parse_musicxml_all_note_info(xml_path):
                     'tie': [],
                     'notations': [],
                     'accidental': None,
-                    'chord': False,
-                    'start_time': current_time,
+                    'chord': is_chord,
+                    'start_time': note_start_time,
                 }
 
                 # Voice
@@ -95,15 +96,13 @@ def parse_musicxml_all_note_info(xml_path):
                 accidental = elem.find(f"{ns}accidental")
                 if accidental is not None:
                     note_info['accidental'] = accidental.text
-                # Chord
-                if elem.find(f"{ns}chord") is not None:
-                    note_info['chord'] = True
-                    note_info['start_time'] = current_time
 
                 notes_data.append(note_info)
-                # Only advance time if not a chord note
-                if elem.find(f"{ns}chord") is None and duration is not None:
+
+                # Only advance current_time if not a chord note
+                if not is_chord and duration is not None:
                     current_time += int(duration.text)
+                    last_nonchord_time = note_info['start_time']
 
     # Group notes by measure
     measureData = []
@@ -122,7 +121,6 @@ def parse_musicxml_all_note_info(xml_path):
 
     return measureData
 
-# ---- Uniform stretching to 64 slots per measure ----
 def notes_to_uniform_grid(measureData):
     notesOnMeasures = []
     for measureCount, measure in enumerate(measureData):
@@ -132,7 +130,7 @@ def notes_to_uniform_grid(measureData):
         staff1MinTime = None
         staff2MaxTime = 0
 
-        # Find max for each staff
+        # Find min/max for each staff
         for note in measure[1:]:
             if note['staff'] == 1:
                 if staff1MinTime is None:
@@ -168,11 +166,11 @@ def notes_to_uniform_grid(measureData):
                     note_str += "*"
 
                 if note['staff'] == 1:
-                    grid_start = int(round((startTime - staff1MinTime) * 64 / staff1Range))
-                    grid_duration = int(round(duration * 64 / staff1Range))
+                    grid_start = int(round((startTime - staff1MinTime) * 64 / staff1Range)) if staff1Range else 0
+                    grid_duration = int(round(duration * 64 / staff1Range)) if staff1Range else 1
                 elif note['staff'] == 2:
-                    grid_start = int(round((startTime - staff2MinTime) * 64 / staff2Range))
-                    grid_duration = int(round(duration * 64 / staff2Range))
+                    grid_start = int(round((startTime - staff2MinTime) * 64 / staff2Range)) if staff2Range else 0
+                    grid_duration = int(round(duration * 64 / staff2Range)) if staff2Range else 1
                 else:
                     grid_start = 0
                     grid_duration = 0
@@ -185,8 +183,8 @@ def notes_to_uniform_grid(measureData):
                         notesOnMeasures[measureCount][idx].append(note_str)
     return notesOnMeasures
 
-if __name__ == "__main__":
-    import sys, json
+def grabData():
+    import sys
     if len(sys.argv) < 2:
         print("Usage: python parse_musicxml_uniform_grid.py <musicxml_file>")
         sys.exit(1)
@@ -196,8 +194,4 @@ if __name__ == "__main__":
 
     # Print example output for first measure
     print("First measure, grid of notes:")
-    for idx, notes in enumerate(notesOnMeasures):
-        print(f"{idx}: {notes}")
-
-    # If you want all note data as JSON:
-    # print(json.dumps(measureData, indent=2))
+    return notesOnMeasures

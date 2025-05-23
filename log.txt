@@ -47,3 +47,18 @@ OVERALL THINGS TO DO
 
 * Things to try:
   * Isolating bottom staff and top staff
+
+
+2025-05-20
+* Top staff fixed!
+
+* Music generation is a lot better
+* When a song is repetitive enough, it eventually results in a steady state fairly similar to the original song (moon river)
+* Have an option for the audio to keep playing notes that are repeated (only when sequences are the same should it be held constant)
+* Fix the flat generation so that it actually plays notes for flats
+
+* FUNCTIONS TO IMPLEMENT
+  * Try isolating bottom staff and top staff for separate matrix training
+  * Try some matrix transformations on the existing bigram matrix
+  *
+  * Retrain matrix and a trigram (may not be as good due to lack of training data)

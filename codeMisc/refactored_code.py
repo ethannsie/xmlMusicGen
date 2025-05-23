@@ -193,7 +193,7 @@ if __name__ == "__main__":
         except:
             return None
 
-    SOUNDFONT_PATH = "FluidR3_GM/FluidR3_GM.sf2"
+    SOUNDFONT_PATH = "../FluidR3_GM/FluidR3_GM.sf2"
     fs = fluidsynth.Synth()
     fs.start()
     sfid = fs.sfload(SOUNDFONT_PATH)
