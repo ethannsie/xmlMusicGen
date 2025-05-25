@@ -26,9 +26,8 @@ def inject_noise(matrix, epsilon=0.01):
 
 
 
-# matrix = scale_temperature(matrix, 1.25)
-matrix = inject_noise(matrix, 0.0001)
-
+matrix = scale_temperature(matrix, 0.5)
+# matrix = inject_noise(matrix, 0.0001)
 
 
 # --------------- TRAJECTORY THROUGH THE ROW STOCHASTIC MATRIX ----------
@@ -105,7 +104,7 @@ def play_chords(chords, duration=0.1, velocity=100):
         fs.noteoff(0, note)
 
 try:
-    play_chords(note_sequences, duration=0.1)
+    play_chords(note_sequences, duration=0.2)
 except KeyboardInterrupt:
     print("Playback interrupted by user (Ctrl+C).")
 finally:
