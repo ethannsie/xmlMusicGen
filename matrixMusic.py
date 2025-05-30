@@ -92,7 +92,7 @@ fs.program_select(0, sfid, 0, 0)
 def play_chords(chords, duration=0.1, velocity=100):
     current = set()
     for chord in chords:
-        semitones = 4
+        semitones = 0
         print(f"Now playing: {semitones} semitones above", chord)
         next_notes = set(filter(None, (note_to_midi(n, semitones) for n in chord)))
         for note in current - next_notes:
