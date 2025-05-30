@@ -26,7 +26,7 @@ def inject_noise(matrix, epsilon=0.01):
 
 
 
-matrix = scale_temperature(matrix, 0.5)
+matrix = scale_temperature(matrix, 2.5)
 # matrix = inject_noise(matrix, 0.0001)
 
 
@@ -45,7 +45,7 @@ for _ in range(1000):
 note_sequences = list(generated)
 
 # -------------------- MIDI PLAYBACK --------------------
-def note_to_midi(note):
+def note_to_midi(note, semitone):
     if note in ["00", "0", "", None]:
         return None
     try:
@@ -75,7 +75,7 @@ def note_to_midi(note):
         note_map = ['C', 'C#', 'D', 'D#', 'E', 'F',
                     'F#', 'G', 'G#', 'A', 'A#', 'B']
 
-        return note_map.index(pitch) + 12 * (octave + 1)
+        return note_map.index(pitch) + 12 * (octave + 1) + semitone
     except Exception as e:
         print(f"Error converting note '{note}': {e}")
         return None
@@ -92,8 +92,9 @@ fs.program_select(0, sfid, 0, 0)
 def play_chords(chords, duration=0.1, velocity=100):
     current = set()
     for chord in chords:
-        print("Now playing:", chord)
-        next_notes = set(filter(None, (note_to_midi(n) for n in chord)))
+        semitones = 4
+        print(f"Now playing: {semitones} semitones above", chord)
+        next_notes = set(filter(None, (note_to_midi(n, semitones) for n in chord)))
         for note in current - next_notes:
             fs.noteoff(0, note)
         for note in next_notes - current:
